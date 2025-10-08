@@ -1,0 +1,135 @@
+{
+  "project_info": {
+    "project_number": "1088772290092",
+    "firebase_url": "https://presentismoapp.firebaseio.com",
+    "project_id": "presentismoapp",
+    "storage_bucket": "presentismoapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088772290092:android:754de4984ea3618cb34389",
+        "android_client_info": {
+          "package_name": "ar.com.appcontrol"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1088772290092-ckregpgjunq7tfbcg0nqpmdflpeqcbum.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2lwXgryJeIO9od_-YpE_d66EG29Xdfok"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088772290092-ckregpgjunq7tfbcg0nqpmdflpeqcbum.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088772290092:android:a06305b46ef41bf3b34389",
+        "android_client_info": {
+          "package_name": "com.appcontrol.brouclean.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1088772290092-ckregpgjunq7tfbcg0nqpmdflpeqcbum.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2lwXgryJeIO9od_-YpE_d66EG29Xdfok"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088772290092-ckregpgjunq7tfbcg0nqpmdflpeqcbum.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088772290092:android:66deddf4e9233be6b34389",
+        "android_client_info": {
+          "package_name": "com.appcontrol.sab5.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1088772290092-ckregpgjunq7tfbcg0nqpmdflpeqcbum.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2lwXgryJeIO9od_-YpE_d66EG29Xdfok"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088772290092-ckregpgjunq7tfbcg0nqpmdflpeqcbum.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088772290092:android:0939a8d53498c49b",
+        "android_client_info": {
+          "package_name": "com.example.sata.presentismoapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1088772290092-rsu7ejqjmg7ui3va7um8ob1r9cv7b8mq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.sata.presentismoapp",
+            "certificate_hash": "722e8a0944bcfc54d101b063218d70abf23839fa"
+          }
+        },
+        {
+          "client_id": "1088772290092-ckregpgjunq7tfbcg0nqpmdflpeqcbum.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2lwXgryJeIO9od_-YpE_d66EG29Xdfok"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088772290092-ckregpgjunq7tfbcg0nqpmdflpeqcbum.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(robocopy:*)",
+      "Bash(xcopy:*)",
+      "Bash(cmd /c \"xcopy \"\"c:\\Proyectos\\Android\\AppControl-2.0\\app\\src\\main\\java\\com\\appcontrol\\sab5\\app\"\" \"\"c:\\Proyectos\\Android\\AppControl-2.0\\app\\src\\main\\java\\ar\\com\\appcontrol\\\"\" /E /I /Y\")",
+      "Bash(powershell:*)",
+      "Bash(gradlew:*)",
+      "Bash(./gradlew:*)",
+      "Bash(del \"c:\\Proyectos\\Android\\AppControl-2.0\\update_package.ps1\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
