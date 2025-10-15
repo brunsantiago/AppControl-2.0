@@ -2,12 +2,15 @@ package ar.com.appcontrol;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.SpannableString;
 import android.text.style.TextAppearanceSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -22,7 +25,10 @@ import androidx.navigation.ui.NavigationUI;
 
 import ar.com.appcontrol.AlertDialog.ExitAlert;
 import ar.com.appcontrol.AlertDialog.LogOutAlert;
+import ar.com.appcontrol.Utils.PreferencesManager;
 import com.google.android.material.navigation.NavigationView;
+
+import java.io.File;
 
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -85,6 +91,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         });
 
+        // Cargar el logo de la empresa desde PreferencesManager
+        loadCompanyLogo();
+
     }
 
     @Override
@@ -117,6 +126,29 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         TextView navObjetivo = (TextView) headerView.findViewById(R.id.textViewObjetivo);
         navObjetivo.setText(objetivo);
         navObjetivo.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.gris));
+    }
+
+    private void loadCompanyLogo() {
+        PreferencesManager preferencesManager = new PreferencesManager(this);
+        String logoMenuPath = preferencesManager.getCompanyLogoMenuPath();
+
+        // Si no hay logo del menú, intentar con el logo principal como fallback
+        if (logoMenuPath == null || logoMenuPath.isEmpty()) {
+            logoMenuPath = preferencesManager.getCompanyLogoPath();
+        }
+
+        if (logoMenuPath != null && !logoMenuPath.isEmpty()) {
+            File logoFile = new File(logoMenuPath);
+            if (logoFile.exists()) {
+                Bitmap logoBitmap = BitmapFactory.decodeFile(logoMenuPath);
+                if (logoBitmap != null) {
+                    NavigationView navigationView = findViewById(R.id.nav_view);
+                    View headerView = navigationView.getHeaderView(0);
+                    ImageView logoImageView = headerView.findViewById(R.id.imageView);
+                    logoImageView.setImageBitmap(logoBitmap);
+                }
+            }
+        }
     }
 
     @Override

@@ -24,11 +24,16 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import com.android.volley.Request;
@@ -42,6 +47,7 @@ import com.android.volley.toolbox.Volley;
 import ar.com.appcontrol.Utils.AuthenticatedJsonArrayRequest;
 import ar.com.appcontrol.Utils.AuthenticatedJsonRequest;
 import ar.com.appcontrol.Utils.JWTManager;
+import ar.com.appcontrol.Utils.PreferencesManager;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
@@ -83,7 +89,9 @@ import java.util.TimeZone;
 public class RegistroActivity extends AppCompatActivity {
 
     private static final String TAG = "RegistroActivity";
-    
+    private static final int CAMERA_PERMISSION_CODE = 100;
+
+    //private ActivityResultLauncher<String> requestPermissionLauncher;
     private TextView textViewVolverLogin;
     private EditText editTextNroLegajo;
     private EditText editTextDni;
@@ -102,6 +110,7 @@ public class RegistroActivity extends AppCompatActivity {
     private String currentPhotoPath;
     private static final int REQUEST_TAKE_PHOTO = 1;
     private FirebaseStorage storage;
+    private PreferencesManager preferencesManager;
     private FaceDetector detector;
     private FaceDetectorOptions highAccuracyOpts = new FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
@@ -160,6 +169,7 @@ public class RegistroActivity extends AppCompatActivity {
         textViewVolverLogin = findViewById(R.id.volverLogin);
 
         storage = FirebaseStorage.getInstance();
+        preferencesManager = new PreferencesManager(this);
         imageViewPhoto = findViewById(R.id.imageView3);
         detector = FaceDetection.getClient(highAccuracyOpts);
         // ELIMINADO: faceDetection=false; - Ya no es necesario
@@ -199,12 +209,13 @@ public class RegistroActivity extends AppCompatActivity {
             public void onClick(View v) {
                 // Validar que el número de legajo esté ingresado
                 if(editTextNroLegajo.getText().toString().trim().isEmpty()) {
-                    Toast.makeText(RegistroActivity.this, 
-                        "Por favor ingrese el número de legajo antes de tomar la foto", 
+                    Toast.makeText(RegistroActivity.this,
+                        "Por favor ingrese el número de legajo antes de tomar la foto",
                         Toast.LENGTH_SHORT).show();
                     return;
                 }
-                dispatchTakePictureIntent();
+                // Verificar y solicitar permiso de cámara
+                checkCameraPermission();
             }
         });
 
@@ -410,24 +421,32 @@ public class RegistroActivity extends AppCompatActivity {
                 return;
             }
             
-            // Construir path
-            String path = "USERS/PROFILE_PHOTO/" + legajoSanitizado;
+            // Construir path usando nueva estructura
+            String companyName = preferencesManager.getSelectedCompanyName();
             String fileName = legajoSanitizado + "_profile_photo.jpg";
-            
-            Log.d(TAG, "Subiendo a path: " + path + "/" + fileName);
-            
-            // Referencia a Storage
-            StorageReference storageRef = storage.getReference();
-            StorageReference photoRef = storageRef.child(path + "/" + fileName);
-            
+
+            // Ruta: accounts/SB9mPqR7sLwN2vH8Tz3F/entities/{companyName}/users/profile_photos/{nroLegajo}/{fileName}
+            Log.d(TAG, "Subiendo a companyName: " + companyName + ", legajo: " + legajoSanitizado);
+
+            // Referencia a Storage usando Firebase principal (webadmin-4fa05)
+            StorageReference photoRef = storage.getReference()
+                    .child("accounts")
+                    .child("SB9mPqR7sLwN2vH8Tz3F")
+                    .child("entities")
+                    .child(companyName != null ? companyName : "")
+                    .child("users")
+                    .child("profile_photos")
+                    .child(legajoSanitizado)
+                    .child(fileName);
+
             // Metadata opcional
             StorageMetadata metadata = new StorageMetadata.Builder()
                     .setContentType("image/jpeg")
                     .setCustomMetadata("legajo", legajoSanitizado)
-                    .setCustomMetadata("uploadDate", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", 
+                    .setCustomMetadata("uploadDate", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",
                                        Locale.getDefault()).format(new Date()))
                     .build();
-            
+
             // Upload con metadata
             UploadTask uploadTask = photoRef.putBytes(data, metadata);
             
@@ -568,83 +587,18 @@ public class RegistroActivity extends AppCompatActivity {
                                 });
     }*/
 
-    // NUEVO: Método para eliminar foto huérfana de Firebase Storage
-    private void deleteOrphanPhoto(String nroLegajo) {
-        String legajoSanitizado = sanitizeLegajo(nroLegajo);
-        if (legajoSanitizado == null) {
-            Log.e(TAG, "No se puede eliminar foto: número de legajo inválido");
-            return;
-        }
-        
-        String path = "USERS/PROFILE_PHOTO/" + legajoSanitizado;
-        String fileName = legajoSanitizado + "_profile_photo.jpg";
-        
-        Log.d(TAG, "Eliminando foto huérfana: " + path + "/" + fileName);
-        
-        StorageReference storageRef = storage.getReference();
-        StorageReference photoRef = storageRef.child(path + "/" + fileName);
-        
-        // Eliminar la foto
-        photoRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
-                Log.d(TAG, "Foto huérfana eliminada exitosamente");
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception exception) {
-                Log.e(TAG, "Error al eliminar foto huérfana: " + exception.getMessage());
-                // No mostramos error al usuario ya que es una operación de limpieza
-            }
-        });
+
+    // NUEVO: Método que primero registra al usuario y luego sube la foto
+    private void registerUserThenUploadPhoto(final String persCodi, final String nroLegajo, final String clave) {
+        // Primero intentar registrar al usuario
+        registrarUsuario(persCodi, nroLegajo, clave);
     }
 
-    // NUEVO: Método que primero sube la foto y luego registra al usuario
-    private void uploadPhotoThenRegister(final String persCodi, final String nroLegajo, final String clave) {
-        // Obtener bitmap de manera segura
-        Bitmap bitmap = getBitmapFromImageView(imageViewPhoto);
-        
-        if (bitmap == null) {
-            progressDialog.dismiss();
-            Toast.makeText(RegistroActivity.this, 
-                "Error: No se pudo procesar la imagen de perfil", 
-                Toast.LENGTH_LONG).show();
-            return;
-        }
-        
-        // Variable para trackear si la foto se subió
-        final boolean[] photoUploaded = {false};
-        
-        // Primero subir la foto
-        uploadProfilePhoto(bitmap, nroLegajo, new UploadCompleteListener() {
-            @Override
-            public void onUploadSuccess(String downloadUrl) {
-                Log.d(TAG, "Foto subida exitosamente, procediendo con el registro");
-                photoUploaded[0] = true;
-                // Solo si la foto se subió correctamente, registrar al usuario
-                registrarUsuario(persCodi, nroLegajo, clave, photoUploaded[0]);
-            }
-            
-            @Override
-            public void onUploadFailed(String error) {
-                progressDialog.dismiss();
-                // NO registrar al usuario si la foto falló
-                new AlertDialog.Builder(RegistroActivity.this)
-                    .setTitle("Error en el registro")
-                    .setMessage("No se pudo completar el registro debido a un error " +
-                              "al subir la foto de perfil:\n\n" + error + 
-                              "\n\nPor favor, intente nuevamente.")
-                    .setPositiveButton("Aceptar", null)
-                    .show();
-            }
-        });
-    }
-
-    // CAMBIO: Método modificado para manejar limpieza de fotos huérfanas
-    private void registrarUsuario(String persCodi, String nroLegajo, String clave, final boolean photoWasUploaded) {
+    // CAMBIO: Método modificado para subir foto DESPUÉS del registro exitoso
+    private void registrarUsuario(final String persCodi, final String nroLegajo, final String clave) {
         try {
             RequestQueue requestQueue = Volley.newRequestQueue(this);
-            String URL = Configurador.API_PATH + "register/"+Configurador.ID_EMPRESA;
+            String URL = Configurador.API_PATH + "register/"+Configurador.getIdEmpresaString();
             JSONObject jsonBody = new JSONObject();
             jsonBody.put("user_codi", persCodi);
             jsonBody.put("user_lega", nroLegajo);
@@ -659,40 +613,64 @@ public class RegistroActivity extends AppCompatActivity {
                 public void onResponse(JSONObject response) {
                     try {
                         if(response.getInt("result")==1){
-                            // La foto ya se subió exitosamente, mostrar éxito completo
-                            progressDialog.dismiss();
-                            showRegisterAlert();
-                            clearFormRegister();
-                            // Resetear estado de la foto
-                            currentPhotoState = PhotoState.NO_PHOTO;
-                            Log.d(TAG, "Registro completado exitosamente");
+                            // Registro exitoso - AHORA subir la foto
+                            Log.d(TAG, "Usuario registrado exitosamente, procediendo a subir foto");
+
+                            // Obtener bitmap de manera segura
+                            Bitmap bitmap = getBitmapFromImageView(imageViewPhoto);
+
+                            if (bitmap == null) {
+                                progressDialog.dismiss();
+                                Toast.makeText(RegistroActivity.this,
+                                    "Usuario registrado pero hubo un error al subir la foto de perfil",
+                                    Toast.LENGTH_LONG).show();
+                                showRegisterAlert();
+                                clearFormRegister();
+                                currentPhotoState = PhotoState.NO_PHOTO;
+                                return;
+                            }
+
+                            // Subir la foto
+                            uploadProfilePhoto(bitmap, nroLegajo, new UploadCompleteListener() {
+                                @Override
+                                public void onUploadSuccess(String downloadUrl) {
+                                    progressDialog.dismiss();
+                                    Log.d(TAG, "Foto subida exitosamente, registro completo");
+                                    showRegisterAlert();
+                                    clearFormRegister();
+                                    currentPhotoState = PhotoState.NO_PHOTO;
+                                }
+
+                                @Override
+                                public void onUploadFailed(String error) {
+                                    progressDialog.dismiss();
+                                    Log.e(TAG, "Error al subir foto después del registro: " + error);
+                                    Toast.makeText(RegistroActivity.this,
+                                        "Usuario registrado pero hubo un error al subir la foto: " + error,
+                                        Toast.LENGTH_LONG).show();
+                                    showRegisterAlert();
+                                    clearFormRegister();
+                                    currentPhotoState = PhotoState.NO_PHOTO;
+                                }
+                            });
                         }else{
+                            // Usuario ya registrado (result != 1)
                             progressDialog.dismiss();
                             Toast.makeText(RegistroActivity.this, "Usuario ya registrado", Toast.LENGTH_SHORT).show();
-                            
-                            // LIMPIEZA: Si la foto se subió pero el usuario ya existe, eliminar la foto
-                            if (photoWasUploaded) {
-                                Log.d(TAG, "Usuario ya existe, eliminando foto subida");
-                                deleteOrphanPhoto(nroLegajo);
-                            }
+                            Log.d(TAG, "Usuario ya existe, no se subió ninguna foto");
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
                         progressDialog.dismiss();
                         Toast.makeText(RegistroActivity.this, "Error al procesar respuesta del servidor", Toast.LENGTH_SHORT).show();
-                        
-                        // LIMPIEZA: Si hubo error procesando la respuesta, eliminar foto
-                        if (photoWasUploaded) {
-                            Log.d(TAG, "Error en respuesta del servidor, eliminando foto subida");
-                            deleteOrphanPhoto(nroLegajo);
-                        }
+                        Log.e(TAG, "Error procesando respuesta: " + e.getMessage());
                     }
                 }
             }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
                     progressDialog.dismiss();
-                    
+
                     // Determinar el tipo de error
                     String errorMessage = "Error al registrar usuario";
                     if (error.networkResponse != null) {
@@ -704,19 +682,16 @@ public class RegistroActivity extends AppCompatActivity {
                         } else if (statusCode >= 500) {
                             errorMessage = "Error en el servidor. Por favor intente más tarde";
                         }
+                        Log.e(TAG, "Error en registro - Status: " + statusCode);
                     } else if (error.getMessage() != null) {
                         if (error.getMessage().contains("NoConnectionError")) {
                             errorMessage = "Error de conexión. Verifique su internet";
                         }
+                        Log.e(TAG, "Error en registro: " + error.getMessage());
                     }
-                    
+
                     Toast.makeText(RegistroActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                    
-                    // LIMPIEZA: Si el registro falló pero la foto se subió, eliminarla
-                    if (photoWasUploaded) {
-                        Log.d(TAG, "Registro falló, eliminando foto subida. Error: " + error.toString());
-                        deleteOrphanPhoto(nroLegajo);
-                    }
+                    Log.d(TAG, "Registro falló, no se subió ninguna foto");
                 }
             }) {
                 @Override
@@ -739,12 +714,7 @@ public class RegistroActivity extends AppCompatActivity {
             e.printStackTrace();
             progressDialog.dismiss();
             Toast.makeText(RegistroActivity.this, "Error al preparar datos de registro", Toast.LENGTH_SHORT).show();
-            
-            // LIMPIEZA: Si hubo error preparando los datos, eliminar foto
-            if (photoWasUploaded) {
-                Log.d(TAG, "Error preparando datos, eliminando foto subida");
-                deleteOrphanPhoto(nroLegajo);
-            }
+            Log.e(TAG, "Error preparando datos: " + e.getMessage());
         }
     }
 
@@ -755,7 +725,7 @@ public class RegistroActivity extends AppCompatActivity {
         String clave = editTextClave.getText().toString();
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String mJSONURLString = Configurador.API_PATH + "personal/"+nroLegajo+"/"+Configurador.ID_EMPRESA;
+        String mJSONURLString = Configurador.API_PATH + "personal/"+nroLegajo+"/"+Configurador.getIdEmpresaString();
         // Initialize a new JsonArrayRequest instance
         String token = jwtManager.getToken();
         AuthenticatedJsonArrayRequest jsonArrayRequest = new AuthenticatedJsonArrayRequest(
@@ -776,8 +746,8 @@ public class RegistroActivity extends AppCompatActivity {
                                 if(isUserEnable(persSector,persEgreso) ){
                                     String persCodi = jsonObject.getString("PERS_CODI");
                                     if(validateUserDataRegister(persDni,persFnac)){
-                                        // CAMBIO: Primero subir la foto, luego registrar
-                                        uploadPhotoThenRegister(persCodi, nroLegajo, clave);
+                                        // CAMBIO: Primero registrar usuario, luego subir foto
+                                        registerUserThenUploadPhoto(persCodi, nroLegajo, clave);
                                     }else{
                                         progressDialog.dismiss();
                                     }
@@ -950,6 +920,45 @@ public class RegistroActivity extends AppCompatActivity {
         currentPhotoPath = imageFile.getAbsolutePath();
         Log.d(TAG, "Archivo de imagen creado: " + currentPhotoPath);
         return imageFile;
+    }
+
+    /**
+     * Verifica el permiso de cámara y abre la cámara
+     * Solicita el permiso just-in-time si no ha sido otorgado
+     */
+    private void checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            // Permiso ya otorgado, abrir cámara
+            dispatchTakePictureIntent();
+        } else {
+            // Solicitar permiso
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.CAMERA},
+                    CAMERA_PERMISSION_CODE
+            );
+        }
+    }
+
+    /**
+     * Maneja la respuesta del usuario a la solicitud de permiso
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == CAMERA_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permiso otorgado, abrir cámara
+                dispatchTakePictureIntent();
+            } else {
+                // Permiso denegado
+                Toast.makeText(this,
+                    "El permiso de cámara es necesario para tomar la foto de perfil",
+                    Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void dispatchTakePictureIntent() {

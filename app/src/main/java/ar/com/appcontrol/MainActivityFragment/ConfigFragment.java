@@ -317,7 +317,7 @@ public class ConfigFragment extends Fragment implements AdapterView.OnItemSelect
 
         try {
             RequestQueue requestQueue = Volley.newRequestQueue(getContext());
-            String URL = Configurador.API_PATH + "request_device/"+Configurador.ID_EMPRESA;
+            String URL = Configurador.API_PATH + "request_device/"+Configurador.getIdEmpresaString();
             JSONObject jsonBody = new JSONObject();
             jsonBody.put("rdev_anid",solicitudDispositivo.getAndroidId());
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -375,7 +375,7 @@ public class ConfigFragment extends Fragment implements AdapterView.OnItemSelect
         clienteInicial.setNombreCliente("Seleccione un Cliente ...");
         listaDeClientes.add(clienteInicial);
         RequestQueue requestQueue = Volley.newRequestQueue(getContext());
-        String mJSONURLString = Configurador.API_PATH + "clientes/"+Configurador.ID_EMPRESA;
+        String mJSONURLString = Configurador.API_PATH + "clientes/"+Configurador.getIdEmpresaString();
         String token = jwtManager.getToken();
         AuthenticatedJsonArrayRequest jsonArrayRequest = new AuthenticatedJsonArrayRequest(
                 mJSONURLString,
@@ -416,7 +416,7 @@ public class ConfigFragment extends Fragment implements AdapterView.OnItemSelect
         objetivoInicial.setNombreObjetivo("Seleccione un Objetivo ...");
         listaDeObjetivos.add(objetivoInicial);
         RequestQueue requestQueue = Volley.newRequestQueue(getContext());
-        String mJSONURLString = Configurador.API_PATH + "objetivos/"+idCliente+"/"+Configurador.ID_EMPRESA;
+        String mJSONURLString = Configurador.API_PATH + "objetivos/"+idCliente+"/"+Configurador.getIdEmpresaString();
         String token = jwtManager.getToken();
         AuthenticatedJsonArrayRequest jsonArrayRequest = new AuthenticatedJsonArrayRequest(
                 mJSONURLString,

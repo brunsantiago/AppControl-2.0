@@ -440,7 +440,7 @@ public class EgresoActivity extends AppCompatActivity implements ResultListener<
         String horaEgresoParametrizado = HoraRegistrada.egresoParametrizado(egresoPuesto, fechaPuesto, horaEgreso, fechaEgreso, turnoNoche);
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String URL = Configurador.API_PATH + "registro_salida/" + asigId + "/" + Configurador.ID_EMPRESA;
+        String URL = Configurador.API_PATH + "registro_salida/" + asigId + "/" + Configurador.getIdEmpresaString();
         JSONObject jsonBody = new JSONObject();
 
         try {
@@ -870,7 +870,7 @@ public class EgresoActivity extends AppCompatActivity implements ResultListener<
         String persCodi = prefs.getString(PERS_CODI,"");
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String mJSONURLString = Configurador.API_PATH + "last_session/"+persCodi+"/"+Configurador.ID_EMPRESA;
+        String mJSONURLString = Configurador.API_PATH + "last_session/"+persCodi+"/"+Configurador.getIdEmpresaString();
 
         String token = jwtManager.getToken();
         AuthenticatedJsonArrayRequest jsonArrayRequest = new AuthenticatedJsonArrayRequest(

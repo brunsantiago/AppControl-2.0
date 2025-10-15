@@ -505,7 +505,7 @@ public class IngresoActivity extends AppCompatActivity implements AdapterView.On
 
         try {
             RequestQueue requestQueue = Volley.newRequestQueue(this);
-            String URL = Configurador.API_PATH + "registro_completo/" + Configurador.ID_EMPRESA;
+            String URL = Configurador.API_PATH + "registro_completo/" + Configurador.getIdEmpresaString();
             JSONObject jsonBody = new JSONObject();
 
             // Datos para asigvigi
@@ -519,7 +519,7 @@ public class IngresoActivity extends AppCompatActivity implements AdapterView.On
             jsonBody.put("asig_pues", prefs.getInt(ASIG_PUES, 0));
             jsonBody.put("asig_bloq", prefs.getInt(ASIG_BLOQ, 0));
             jsonBody.put("asig_facm", prefs.getInt(ASIG_FACM, 0));
-            jsonBody.put("asig_empr", Configurador.ID_EMPRESA);
+            jsonBody.put("asig_empr", Configurador.getIdEmpresaString());
 
             // Datos para last_session
             jsonBody.put("last_cper", prefs.getString(PERS_CODI, ""));
@@ -535,7 +535,7 @@ public class IngresoActivity extends AppCompatActivity implements AdapterView.On
             jsonBody.put("last_ncli", prefs.getString(NOMBRE_CLIENTE, ""));
             jsonBody.put("last_nobj", prefs.getString(NOMBRE_OBJETIVO, ""));
             jsonBody.put("last_dhre", prefs.getString(HORA_INGRESO, ""));
-            jsonBody.put("idEmpresa", Configurador.ID_EMPRESA);
+            jsonBody.put("idEmpresa", Configurador.getIdEmpresaString());
 
             final String requestBody = jsonBody.toString();
             String token = jwtManager.getToken();
@@ -1270,7 +1270,7 @@ public class IngresoActivity extends AppCompatActivity implements AdapterView.On
 
         RequestQueue requestQueue = Volley.newRequestQueue(IngresoActivity.this);
         // String url = Configurador.API_PATH + "puestos/" + idClienteLocal + "/" + idObjetivoLocal; // URL anterior
-        String url = Configurador.API_PATH + "puestos-con-estado/" + idClienteLocal + "/" + idObjetivoLocal + "/" + Configurador.ID_EMPRESA;
+        String url = Configurador.API_PATH + "puestos-con-estado/" + idClienteLocal + "/" + idObjetivoLocal + "/" + Configurador.getIdEmpresaString();
         String token = jwtManager.getToken();
         AuthenticatedJsonArrayRequest jsonArrayRequest = new AuthenticatedJsonArrayRequest(url, token, this, new Response.Listener<JSONArray>() {
             @Override

@@ -9,12 +9,13 @@
 
 
     <ImageView
+        android:id="@+id/companyLogo"
         android:layout_width="134dp"
         android:layout_height="127dp"
         android:layout_above="@+id/recuadro"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="10dp"
-        app:srcCompat="@drawable/logo" />
+        app:srcCompat="@mipmap/ic_launcher_round" />
 
     <FrameLayout
         android:id="@+id/recuadro"
@@ -26,15 +27,15 @@
 
     </FrameLayout>
 
-    <ImageView
-        android:id="@+id/imageView2"
-        android:layout_width="75dp"
-        android:layout_height="31dp"
-        android:layout_alignTop="@id/recuadro"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp"
-        android:contentDescription="TODO"
-        app:srcCompat="@drawable/sab5" />
+<!--    <ImageView-->
+<!--        android:id="@+id/imageView2"-->
+<!--        android:layout_width="75dp"-->
+<!--        android:layout_height="31dp"-->
+<!--        android:layout_alignTop="@id/recuadro"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:layout_marginTop="10dp"-->
+<!--        android:contentDescription="TODO"-->
+<!--        app:srcCompat="@drawable/sab5" />-->
 
     <EditText
         android:id="@+id/nrolegajo"
@@ -42,7 +43,7 @@
         android:layout_height="40dp"
         android:layout_alignTop="@id/recuadro"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="30dp"
         android:background="@drawable/shapeblanco"
         android:drawableStart="@drawable/ic_person_black_24dp"
         android:ems="10"

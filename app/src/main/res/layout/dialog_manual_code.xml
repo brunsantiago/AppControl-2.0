@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ingresa el Código de Activación"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:fontFamily="@font/hpsimplified_rg"
+        android:layout_marginBottom="15dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Formato: SAB5-XXXX-XXXX-XXXX"
+        android:textSize="12sp"
+        android:textColor="@android:color/darker_gray"
+        android:fontFamily="@font/hpsimplified_rg"
+        android:layout_marginBottom="10dp" />
+
+    <EditText
+        android:id="@+id/editTextActivationCode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ej: SAB5-XJ7K-9M2P"
+        android:inputType="textCapCharacters"
+        android:maxLength="19"
+        android:fontFamily="@font/hpsimplified_rg"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:background="@drawable/shapeblanco" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="20dp"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/buttonCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancelar"
+            android:textColor="@android:color/black"
+            android:fontFamily="@font/hpsimplified_rg"
+            android:background="?android:attr/selectableItemBackground"
+            android:layout_marginEnd="10dp" />
+
+        <Button
+            android:id="@+id/buttonValidate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Validar"
+            android:textColor="@android:color/white"
+            android:fontFamily="@font/hpsimplified_rg"
+            android:background="@color/colorPrimary"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

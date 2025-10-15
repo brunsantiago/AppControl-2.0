@@ -1,12 +1,14 @@
 package ar.com.appcontrol;
 
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.ColorDrawable;
@@ -16,11 +18,15 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -38,6 +44,7 @@ import ar.com.appcontrol.AlertDialog.UpdateAlert;
 import ar.com.appcontrol.Utils.AuthenticatedJsonArrayRequest;
 import ar.com.appcontrol.Utils.AuthenticatedJsonRequest;
 import ar.com.appcontrol.Utils.JWTManager;
+import ar.com.appcontrol.Utils.PreferencesManager;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -61,14 +68,18 @@ public class LoginActivity extends AppCompatActivity {
     private static final String MAP_RADIO = "map_radio";
     private static final String DEVI_UBIC = "devi_ubic";
 
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
+
     private TextView textViewNroLegajo;
     private TextView textViewClave;
     private Button botonIngresar;
     private TextView textViewRecoveryKey;
     private TextView textViewRegistrarse;
     private TextView textViewVersion;
+    private ImageView imageViewCompanyLogo;
     private ProgressDialog progressDialog = null;
     private UpdateAlert currentUpdateAlert = null;
+    private PreferencesManager preferencesManager;
 
     private static final String NRO_LEGAJO = "nl";
 
@@ -99,6 +110,7 @@ public class LoginActivity extends AppCompatActivity {
         androidId = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
 
         jwtManager = new JWTManager(this);
+        preferencesManager = new PreferencesManager(this);
 
         textViewNroLegajo = findViewById(R.id.nrolegajo);
         textViewClave = findViewById(R.id.clave);
@@ -106,8 +118,12 @@ public class LoginActivity extends AppCompatActivity {
         textViewRecoveryKey = findViewById(R.id.recoverKey);
         textViewRegistrarse = findViewById(R.id.registrarse);
         textViewVersion = findViewById(R.id.version);
+        imageViewCompanyLogo = findViewById(R.id.companyLogo);
 
         storage = FirebaseStorage.getInstance();
+
+        // Cargar logo de la empresa
+        loadCompanyLogo();
 
         progressDialog = new ProgressDialog(LoginActivity.this);
         progressDialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
@@ -148,14 +164,81 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        // Solicitar permiso de cámara al iniciar
+        requestCameraPermission();
+
+    }
+
+    /**
+     * Solicita el permiso de cámara si no ha sido otorgado
+     */
+    private void requestCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            // El permiso no ha sido otorgado, solicitarlo
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.CAMERA},
+                    CAMERA_PERMISSION_REQUEST_CODE
+            );
+        }
+        // Si el permiso ya fue otorgado, no hacer nada
+    }
+
+    /**
+     * Maneja la respuesta del usuario a la solicitud de permiso
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permiso otorgado
+                Log.d("LoginActivity", "Permiso de cámara otorgado");
+            } else {
+                // Permiso denegado - la app funcionará pero sin funcionalidad de cámara
+                Toast.makeText(this,
+                    "El permiso de cámara es necesario para usar el reconocimiento facial",
+                    Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override
     protected void onResume() {
         sharedPreferencesClear();
         deleteCache(this);
+        loadCompanyLogo();
         checkForUpdates();
         super.onResume();
+    }
+
+    /**
+     * Carga el logo de la empresa desde el almacenamiento local
+     */
+    private void loadCompanyLogo() {
+        String logoPath = preferencesManager.getCompanyLogoPath();
+
+        if (logoPath != null && !logoPath.isEmpty()) {
+            File logoFile = new File(logoPath);
+
+            if (logoFile.exists()) {
+                Bitmap bitmap = BitmapFactory.decodeFile(logoPath);
+                if (bitmap != null) {
+                    imageViewCompanyLogo.setImageBitmap(bitmap);
+                } else {
+                    // Si no se puede cargar el bitmap, usar logo por defecto
+                    imageViewCompanyLogo.setImageResource(R.mipmap.ic_launcher);
+                }
+            } else {
+                // Si el archivo no existe, usar logo por defecto
+                imageViewCompanyLogo.setImageResource(R.mipmap.ic_launcher);
+            }
+        } else {
+            // Si no hay logo guardado, usar logo por defecto
+            imageViewCompanyLogo.setImageResource(R.mipmap.ic_launcher);
+        }
     }
 
     private void sharedPreferencesClear(){
@@ -171,7 +254,7 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences.Editor editor = prefs.edit();
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String mJSONURLString = Configurador.API_PATH + "personal/"+nroLegajo+"/"+Configurador.ID_EMPRESA;
+        String mJSONURLString = Configurador.API_PATH + "personal/"+nroLegajo+"/"+Configurador.getIdEmpresaString();
 
         AuthenticatedJsonArrayRequest jsonArrayRequest = new AuthenticatedJsonArrayRequest(
                 mJSONURLString,
@@ -230,7 +313,7 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("MisPreferencias", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String mJSONURLString = Configurador.API_PATH + "users/"+persCodi+"/"+Configurador.ID_EMPRESA;
+        String mJSONURLString = Configurador.API_PATH + "users/"+persCodi+"/"+Configurador.getIdEmpresaString();
         AuthenticatedJsonRequest jsonObjectRequest = new AuthenticatedJsonRequest(
                 Request.Method.GET,
                 mJSONURLString,
@@ -265,7 +348,7 @@ public class LoginActivity extends AppCompatActivity {
 
         try {
             RequestQueue requestQueue = Volley.newRequestQueue(this);
-            String URL = Configurador.API_PATH + "login/"+Configurador.ID_EMPRESA;
+            String URL = Configurador.API_PATH + "login/"+Configurador.getIdEmpresaString();
             JSONObject jsonBody = new JSONObject();
             jsonBody.put("user_lega", nroLegajo);
             jsonBody.put("user_pass", clave);
@@ -284,6 +367,7 @@ public class LoginActivity extends AppCompatActivity {
                             if(response.has("token")){
                                 String token = response.getString("token");
                                 jwtManager.saveToken(token);
+
                                 initUserData(nroLegajo, token);
                             }else{
                                 Toast.makeText(LoginActivity.this, "Token no recibido", Toast.LENGTH_SHORT).show();
@@ -347,10 +431,11 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loadDevice(){
+
         String idAndroid = getAndroidID();
         if(idAndroid!=null){
             RequestQueue requestQueue = Volley.newRequestQueue(this);
-            String mJSONURLString = Configurador.API_PATH + "devices/"+idAndroid+"/"+Configurador.ID_EMPRESA;
+            String mJSONURLString = Configurador.API_PATH + "devices/"+idAndroid+"/"+Configurador.getIdEmpresaString();
             JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                     Request.Method.GET,
                     mJSONURLString,
@@ -359,6 +444,7 @@ public class LoginActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(JSONObject response) {
                             if (response != null) {
+
                                 String nombreCliente = null;
                                 String nombreObjetivo = null;
                                 boolean disabledDevice = false;
@@ -384,6 +470,8 @@ public class LoginActivity extends AppCompatActivity {
                                         editor.putInt(MAP_RADIO, mapRadio);
                                         editor.putString(ID_ANDROID, idAndroid);
                                         editor.apply();
+
+
                                         loadLoginActivity();
                                     }else{
                                         disabledDevice = true;
@@ -432,19 +520,40 @@ public class LoginActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("MisPreferencias", Context.MODE_PRIVATE);
         String nroLegajo = prefs.getString(NRO_LEGAJO,"");
         String fileName = nroLegajo+"_profile_photo.jpg";
+        String companyName = preferencesManager.getSelectedCompanyName();
 
+        // Log de debug
+        Log.d("LoginActivity", "Descargando foto - CompanyName: " + companyName + ", Legajo: " + nroLegajo);
+        // Ruta: accounts/SB9mPqR7sLwN2vH8Tz3F/entities/{companyName}/users/profile_photos/{nroLegajo}/{fileName}
+        // Usando Firebase Storage principal (webadmin-4fa05)
         StorageReference photoRef = storage.getReference()
-                //.child("BROUCLEAN") or .child("CONSISA")
-                .child("USERS") // SAB-5 esta en el directorio raiz
-                .child("PROFILE_PHOTO")
+                .child("accounts")
+                .child("SB9mPqR7sLwN2vH8Tz3F")
+                .child("entities")
+                .child(companyName != null ? companyName : "")
+                .child("users")
+                .child("profile_photos")
                 .child(nroLegajo)
                 .child(fileName);
+
+        Log.d("LoginActivity", "Ruta completa: " + photoRef.getPath());
+
         photoRef.getBytes(600*600)
                 .addOnSuccessListener(new OnSuccessListener<byte[]>() {
                     @Override
                     public void onSuccess(byte[] bytes) {
                         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
                         saveToInternalStorage(bitmap);
+                    }
+                })
+                .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+                    @Override
+                    public void onFailure(@androidx.annotation.NonNull Exception e) {
+                        // Si falla la descarga de la foto, mostrar mensaje y detener el progreso
+                        Log.e("LoginActivity", "Error al descargar foto de perfil: " + e.getMessage());
+                        progressDialog.dismiss();
+                        botonIngresar.setClickable(true);
+                        Toast.makeText(LoginActivity.this, "No se pudo descargar la foto de perfil", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -517,8 +626,8 @@ public class LoginActivity extends AppCompatActivity {
         updateVersionDevice(); // Actualiza la version del dispositivo en el servidor
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String mJSONURLString = Configurador.API_PATH + "app_version/last_version/"+Configurador.ID_EMPRESA;
-        //String mJSONURLString = Configurador.API_PATH + "test/app_version/last_version/"+Configurador.ID_EMPRESA;
+        String mJSONURLString = Configurador.API_PATH + "app_version/last_version/"+Configurador.getIdEmpresaString();
+        //String mJSONURLString = Configurador.API_PATH + "test/app_version/last_version/"+Configurador.getIdEmpresaString();
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
                 Request.Method.GET,
                 mJSONURLString,
@@ -564,7 +673,7 @@ public class LoginActivity extends AppCompatActivity {
     private void updateVersionDevice(){
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String URL = Configurador.API_PATH + "devices/"+androidId+"/"+Configurador.ID_EMPRESA;
+        String URL = Configurador.API_PATH + "devices/"+androidId+"/"+Configurador.getIdEmpresaString();
         JSONObject jsonBody = new JSONObject();
 
         try {

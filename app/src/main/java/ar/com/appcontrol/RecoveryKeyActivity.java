@@ -1,9 +1,11 @@
 package ar.com.appcontrol;
+import android.Manifest;
 import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
@@ -26,6 +28,8 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import com.android.volley.Request;
@@ -39,6 +43,7 @@ import com.android.volley.toolbox.Volley;
 import ar.com.appcontrol.Utils.AuthenticatedJsonArrayRequest;
 import ar.com.appcontrol.Utils.AuthenticatedJsonRequest;
 import ar.com.appcontrol.Utils.JWTManager;
+import ar.com.appcontrol.Utils.PreferencesManager;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
@@ -80,6 +85,9 @@ import java.util.TimeZone;
 
 public class RecoveryKeyActivity extends AppCompatActivity {
 
+    private static final int REQUEST_TAKE_PHOTO = 1;
+    private static final int CAMERA_PERMISSION_CODE = 100;
+
     private ImageView imageViewPhoto;
     private TextView textViewVolverLogin;
     private EditText editTextNroLegajo;
@@ -99,13 +107,13 @@ public class RecoveryKeyActivity extends AppCompatActivity {
 
     private Uri photoURI;
     private String currentPhotoPath;
-    private static final int REQUEST_TAKE_PHOTO = 1;
     private boolean faceDetection;
     private FaceDetector detector;
     private FaceDetectorOptions highAccuracyOpts;
     private FaceClassifier faceClassifier;
 
     private JWTManager jwtManager;
+    private PreferencesManager preferencesManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,6 +121,7 @@ public class RecoveryKeyActivity extends AppCompatActivity {
         setContentView(R.layout.activity_recovery_key);
 
         jwtManager = new JWTManager(this);
+        preferencesManager = new PreferencesManager(this);
 
         OnBackPressedCallback callback = new OnBackPressedCallback(true) {
             @Override
@@ -181,7 +190,7 @@ public class RecoveryKeyActivity extends AppCompatActivity {
         btnTakePhoto.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                dispatchTakePictureIntent();
+                checkCameraPermission();
             }
         });
 
@@ -309,7 +318,7 @@ public class RecoveryKeyActivity extends AppCompatActivity {
         String clave = editTextClave.getText().toString();
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String mJSONURLString = Configurador.API_PATH + "personal/"+nroLegajo+"/"+Configurador.ID_EMPRESA;
+        String mJSONURLString = Configurador.API_PATH + "personal/"+nroLegajo+"/"+Configurador.getIdEmpresaString();
         // Initialize a new JsonArrayRequest instance
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
                 Request.Method.GET,
@@ -419,7 +428,7 @@ public class RecoveryKeyActivity extends AppCompatActivity {
     private void recoveryKey(String persCodi, String clave) {
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        String URL = Configurador.API_PATH + "recovery_key/"+Configurador.ID_EMPRESA;
+        String URL = Configurador.API_PATH + "recovery_key/"+Configurador.getIdEmpresaString();
         JSONObject jsonBody = new JSONObject();
 
         try {
@@ -490,11 +499,17 @@ public class RecoveryKeyActivity extends AppCompatActivity {
     private void downloadProfilePhoto(String nroLegajo, String persCodi,String clave){
 
         String fileName = nroLegajo+"_profile_photo.jpg";
+        String companyName = preferencesManager.getSelectedCompanyName();
 
+        // Ruta: accounts/SB9mPqR7sLwN2vH8Tz3F/entities/{companyName}/users/profile_photos/{nroLegajo}/{fileName}
+        // Usando Firebase Storage principal (webadmin-4fa05)
         StorageReference photoRef = storage.getReference()
-                //.child("BROUCLEAN") or .child("CONSISA")
-                .child("USERS") // SAB-5 Directorio raiz
-                .child("PROFILE_PHOTO")
+                .child("accounts")
+                .child("SB9mPqR7sLwN2vH8Tz3F")
+                .child("entities")
+                .child(companyName != null ? companyName : "")
+                .child("users")
+                .child("profile_photos")
                 .child(nroLegajo)
                 .child(fileName);
 
@@ -551,6 +566,45 @@ public class RecoveryKeyActivity extends AppCompatActivity {
         }
         currentPhotoPath = imageFile.getAbsolutePath();
         return imageFile;
+    }
+
+    /**
+     * Verifica el permiso de cámara y abre la cámara
+     * Solicita el permiso just-in-time si no ha sido otorgado
+     */
+    private void checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            // Permiso ya otorgado, abrir cámara
+            dispatchTakePictureIntent();
+        } else {
+            // Solicitar permiso
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.CAMERA},
+                    CAMERA_PERMISSION_CODE
+            );
+        }
+    }
+
+    /**
+     * Maneja la respuesta del usuario a la solicitud de permiso
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == CAMERA_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permiso otorgado, abrir cámara
+                dispatchTakePictureIntent();
+            } else {
+                // Permiso denegado
+                Toast.makeText(this,
+                    "El permiso de cámara es necesario para el reconocimiento facial",
+                    Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void dispatchTakePictureIntent() {

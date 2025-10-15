@@ -7,7 +7,11 @@
       "Bash(powershell:*)",
       "Bash(gradlew:*)",
       "Bash(./gradlew:*)",
-      "Bash(del \"c:\\Proyectos\\Android\\AppControl-2.0\\update_package.ps1\")"
+      "Bash(del \"c:\\Proyectos\\Android\\AppControl-2.0\\update_package.ps1\")",
+      "Read(//c/Proyectos/Web-Server/Server/api-datamanager-2.0/src/controllers/**)",
+      "Read(//c/Proyectos/Web-Server/Server/api-datamanager-2.0/src/routes/**)",
+      "Read(//c/Proyectos/Web-Server/Server/api-datamanager-2.0/**)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

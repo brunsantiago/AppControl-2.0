@@ -14,6 +14,8 @@
         android:maxSdkVersion="18" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -24,15 +26,51 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
 
+        <!-- LauncherActivity - Punto de entrada principal -->
+        <activity
+            android:name=".LauncherActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/SplashTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- CompanyProvisioningActivity - Configuración de empresa -->
+        <activity
+            android:name=".CompanyProvisioningActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask">
+
+            <!-- Deep Link Scheme: appcontrol://configure?token=XXX -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="appcontrol"
+                    android:host="configure" />
+            </intent-filter>
+
+            <!-- Universal Link (HTTPS): https://app.appcontrol.com.ar/configure?token=XXX -->
+            <!-- Este método NO es visible en la UI, es automático cuando usuario hace click en link -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="app.appcontrol.com.ar"
+                    android:pathPrefix="/configure" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".LoginActivity"
             android:screenOrientation="portrait">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".RegistroActivity"
